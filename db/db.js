@@ -15,14 +15,15 @@ database.query = function (sql, params) {
 
 const initDb = async () => {
   try {
+    await database.run(`PRAGMA foreign_keys = ON`)
     await database.run(
       `CREATE TABLE IF NOT EXISTS Users (
-    _id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE)`);
+    _id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    username TEXT UNIQUE NOT NULL)`);
     await database.run(
       `CREATE TABLE IF NOT EXISTS Exercises (
     _id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId INTEGER,
+    userId INTEGER NOT NULL,
     description TEXT,
     duration INTEGER,
     date INTEGER,

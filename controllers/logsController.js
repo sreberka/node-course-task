@@ -12,25 +12,29 @@ const getLogs = async (req, res) => {
     sendError(res, '"limit" value should be a number.');
   } else {
     try {
-      const startDate = from ? `AND date > ${new Date(from).getTime()}` : '';
-      const endDate = to ? `AND date < ${new Date(to).getTime()}` : '';
-      const resultLimit = limit ? `LIMIT ${limit}` : '';
-      const sqlGetAll = 'SELECT * FROM Exercises WHERE userId = ?';
       const sqlGetUser = 'SELECT * FROM Users WHERE _id = ?';
-      const sqlWithQuery = `SELECT * FROM Exercises WHERE userId = ? ${startDate} ${endDate} ${resultLimit}`;
-      const all = await database.query(sqlGetAll, userId);
       const user = await database.query(sqlGetUser, userId);
-      const result = await database.query(sqlWithQuery, userId);
-      const exercises = result.map(item => ({
-        description: item.description,
-        duration: item.duration,
-        date: getFormattedDate(item.date)
-      }))
-      res.json({
-        ...user[0],
-        total: all.length,
-        exercises
-      })
+      if(user.length === 0) {
+        res.status(404).json({'error': 'user not found'})
+      } else {
+        const startDate = from ? `AND Exercises.date > ${new Date(from).getTime()}` : '';
+        const endDate = to ? `AND Exercises.date < ${new Date(to).getTime()}` : '';
+        const resultLimit = limit ? `LIMIT ${limit}` : '';
+        const sqlGetAll = 'SELECT COUNT(*) FROM Exercises WHERE userId = ?';
+        const sqlExercisesWithQuery = `SELECT Exercises.description, Exercises.duration, Exercises.date FROM Users INNER JOIN Exercises ON Users._id=Exercises.userId WHERE Users._id=? ${startDate} ${endDate} ${resultLimit}`;
+        const exercisesWithQuery = await database.query(sqlExercisesWithQuery, userId);
+        const all = await database.query(sqlGetAll, userId);
+        const exercises = exercisesWithQuery.map(item => ({
+          description: item.description,
+          duration: item.duration,
+          date: getFormattedDate(item.date)
+        }));
+        res.json({
+          ...user[0],
+          total: all[0]['COUNT(*)'],
+          exercises
+        });
+      }
     } catch (e) {
       res.status(500).json({'error': e})
     }
